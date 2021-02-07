@@ -285,9 +285,7 @@ current_damsExport <- current_dams %>%
   rename_at(vars(contains("Overa")), ~ str_replace(., "Overa", "Overall")) %>%
   rename_at(vars(contains("3rc")), ~ str_replace(., "3rc", "30rc")) %>%
   rename_at(vars(contains("5rc")), ~ str_replace(., "5rc", "50rc")) %>%
-  mutate_at(vars(Overall:RC12_P50), ~ round(., 2)) %>%
-  st_drop_geometry()
-skimr::skim(current_damsExport)
+  mutate_at(vars(Overall:RC12_P50), ~ round(., 2))
 
 # Future dams
 future_damsExport <- future_dams %>%
@@ -305,11 +303,15 @@ future_damsExport <- future_dams %>%
   rename_at(vars(contains("Overa")), ~ str_replace(., "Overa", "Overall")) %>%
   rename_at(vars(contains("3rc")), ~ str_replace(., "3rc", "30rc")) %>%
   rename_at(vars(contains("5rc")), ~ str_replace(., "5rc", "50rc")) %>%
-  mutate_at(vars(Overall:RC12_P50), ~ round(., 2)) %>%
-  st_drop_geometry()
-skimr::skim(future_damsExport)
+  mutate_at(vars(Overall:RC12_P50), ~ round(., 2))
 
-# Descriptions
+
+# Shapefile
+st_write(current_damsExport, "outputs/shp/GRanD_WRFscenarios.shp", layer_options = "ENCODING=UTF-8", delete_layer = TRUE)
+st_write(future_damsExport, "outputs/shp/FHReD_WRFscenarios.shp", layer_options = "ENCODING=UTF-8", delete_layer = TRUE)
+
+
+# Excel
 columnsDescription <- tribble(
   ~Column, ~Description,
   "Overall",   "WRF 2020 risk score in Overall basin risk, composed of three risk types: Physical (Phy), Regulatory (Reg), and Reputational (Reg)",
@@ -344,11 +346,11 @@ columnsDescription <- tribble(
 )
 
 openxlsx::write.xlsx(list(
-  "GRanD+WRF Scenarios" = current_damsExport,
+  "GRanD+WRF Scenarios" = st_drop_geometry(current_damsExport),
   "Columns description" = columnsDescription),
   file = "outputs/xlsx/GRanD_WRFscenarios.xlsx", row.names = FALSE)
 
 openxlsx::write.xlsx(list(
-  "FHReD+WRF Scenarios" = future_damsExport,
+  "FHReD+WRF Scenarios" = st_drop_geometry(future_damsExport),
   "Columns description" = columnsDescription),
   file = "outputs/xlsx/FHReD_WRFscenarios.xlsx", row.names = FALSE)
