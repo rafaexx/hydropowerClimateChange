@@ -1,0 +1,12 @@
+name: HydropowerClimateChange
+title: HydropowerClimateChange
+username:
+account: rcamargo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3597810
+bundleId: 4370273
+url: https://rcamargo.shinyapps.io/HydropowerClimateChange/
+when: 1616189205.92281
+asMultiple: FALSE
+asStatic: FALSE

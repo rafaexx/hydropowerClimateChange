@@ -1,9 +1,11 @@
 library(tidyverse)
 library(sf)
+library(networkD3)
+
 
 #### Load data ----
-current_dams <- readRDS("outputs/rds/current_dams_scenarios.rds")
-future_dams <- readRDS("outputs/rds/future_dams_scenarios.rds")
+current_dams <- readRDS("outputs/rds/current_dams_scenarios.rds") %>% st_drop_geometry()
+future_dams <- readRDS("outputs/rds/future_dams_scenarios.rds") %>% st_drop_geometry()
 summaryCountry_grand <- readRDS("outputs/rds/summaryCountry_grand.rds")
 summaryCountry_fhred <- readRDS("outputs/rds/summaryCountry_fhred.rds")
 
@@ -56,8 +58,8 @@ makeBoxplot1to4 <- function(data, summary, riskChange, n, RCx_P5rc, RCx, AxisLab
 
 makeBoxplot1to4(current_dams, summaryCountry_grand, ScarcityChange_P50, 25, RC1_P5rc, RC1, "Change in scarcity risk by 2050", "Existing dams  |  Scarcity risk per country", "Boxplot1_GRanD_ChangeScarcityP50")
 makeBoxplot1to4(current_dams, summaryCountry_grand, FloodChange_P50, 25, RC2_P5rc, RC2, "Change in flood risk by 2050", "Existing dams  |  Flood risk per country", "Boxplot2_GRanD_ChangeFloodingP50")
-makeBoxplot1to4(future_dams, summaryCountry_fhred, ScarcityChange_P50, 25, RC1_P5rc, RC1, "Change in scarcity risk by 2050", "Potential dams  |  Scarcity risk per country", "Boxplot3_FHReD_ChangeScarcityP50")
-makeBoxplot1to4(future_dams, summaryCountry_fhred, FloodChange_P50, 25, RC2_P5rc, RC2, "Change in flood risk by 2050", "Potential dams  |  Flood risk per country", "Boxplot4_FHReD_ChangeFloodingP50")
+makeBoxplot1to4(future_dams, summaryCountry_fhred, ScarcityChange_P50, 25, RC1_P5rc, RC1, "Change in scarcity risk by 2050", "Projected dams  |  Scarcity risk per country", "Boxplot3_FHReD_ChangeScarcityP50")
+makeBoxplot1to4(future_dams, summaryCountry_fhred, FloodChange_P50, 25, RC2_P5rc, RC2, "Change in flood risk by 2050", "Projected dams  |  Flood risk per country", "Boxplot4_FHReD_ChangeFloodingP50")
 
 
 #### Bar charts by risk class (Analyses 1 to 4) ----
@@ -124,6 +126,66 @@ makeBarchart1to4(future_dams, RC1, RC1_O50, RC1_C50, RC1_P50, "Barchart3_FHReD_S
 makeBarchart1to4(future_dams, RC2, RC2_O50, RC2_C50, RC2_P50, "Barchart4_FHReD_Scenarios_Flooding")
 
 
+#### Sankey diagrams by risk class (Analyses 1 to 4) ----
+#### Classify risk scores
+scoresToClasses <- function(variable){
+  variable <- rlang::eval_tidy(variable)
+  case_when(
+    !!variable <= 1.8 ~ "Very_low",
+    !!variable > 1.8 & !!variable <= 2.6 ~ "Low",
+    !!variable > 2.6 & !!variable <= 3.4 ~ "Medium",
+    !!variable > 3.4 & !!variable <= 4.2 ~ "High",
+    !!variable > 4.2 & !!variable <= 5.0 ~ "Very_high",
+    !!variable > 5.0 & !!variable <= 6.6 ~ "Extreme"
+  )
+}
+
+makeSankey <- function(data, RCx, RCx_Xxx){
+  
+  #### Transform to connections
+  RCx <- enquo(RCx)
+  RCx_Xxx <- enquo(RCx_Xxx)
+  
+  links <- data %>%
+    mutate(
+      source = scoresToClasses(!!RCx),
+      target = scoresToClasses(!!RCx_Xxx)
+    ) %>%
+    group_by(source, target) %>%
+    summarise(value = n())
+  
+  links$target <- paste(links$target, "_", sep="")
+  
+  # From these flows we need to create a node data frame: it lists every entities involved in the flow
+  nodes <- data.frame(
+    name=c("Very_high", "High", "Medium", "Low", "Very_low", "Extreme_", "Very_high_", "High_", "Medium_", "Low_", "Very_low_")
+  )
+  
+  # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+  links$IDsource <- match(links$source, nodes$name)-1 
+  links$IDtarget <- match(links$target, nodes$name)-1
+  
+  # prepare colour scale
+  myColor <- 'd3.scaleOrdinal() 
+  .domain(["Very_high", "High", "Medium", "Low", "Very_low", "Extreme_", "Very_high_", "High_", "Medium_", "Low_", "Very_low_"]) 
+  .range(["#e60000", "#ff5500", "#ffaa00", "#ffff73", "#e9ffbe", "#8c0000", "#e60000", "#ff5500", "#ffaa00", "#ffff73", "#e9ffbe"])'
+  
+  # Make the Network
+  sankeyNetwork(Links = links, Nodes = nodes,
+                Source = "IDsource", Target = "IDtarget",
+                Value = "value", NodeID = "name", 
+                iterations = 0, sinksRight=FALSE, 
+                colourScale = myColor,
+                nodeWidth = 40, nodePadding = 10, 
+                fontFamily = "Arial Nova", fontSize = 13)
+}
+
+makeSankey(current_dams, RC1, RC1_P50) 
+makeSankey(current_dams, RC2, RC2_P50)
+makeSankey(future_dams, RC1, RC1_P50)
+makeSankey(future_dams, RC2, RC2_P50)
+
+
 #### Bar charts by risk class (Analysis 5) ----
 b5a <- current_dams %>%
   mutate(
@@ -164,6 +226,6 @@ b5b <- future_dams %>%
   geom_text(stat='count', aes(label=paste0(round((..count..)/sum(..count..)*100), "%")), vjust=-1, color="black",
             position = position_dodge(0.9), size=3.5) +
   theme_classic() +
-  labs(x= "Biodiversity risk in 2020", y= "Number of future dams")
+  labs(x= "Biodiversity risk in 2020", y= "Number of projected dams")
 ggsave("outputs/barcharts/Barchart5b_FHReD_BiodiversityImportance2020.jpeg", b5b,
        width = 10, height = 6, dpi = 300, units = "cm", device='jpeg')
