@@ -204,6 +204,47 @@ temp_all_dams %>%
   )
 
 
+#### 7. GRanD + FHReD + Scarcity (2020) + Flooding (2050) ----
+
+## Number of dams
+# ...already exposed to medium to very high risk today
+tally(filter(all_dams, RC1_P50 > 2.6 & RC2_P50 > 2.6))/tally(all_dams) # 1096/6188 (18%)
+
+
+# Geographic distribution
+all_dams %>%
+  filter(RC1_P50 > 2.6 & RC2_P50 > 2.6) %>%
+  group_by(Country) %>%
+  summarise(n=n()) %>%
+  arrange(desc(n))
+
+
+# Risk combination
+temp_all_dams <- all_dams %>%
+  mutate(
+    Capacity_perc = sqrt(Capacity_perc)*15, Capacity_perc = if_else(Capacity_perc < 0.1, 0.1, Capacity_perc), # for visualisation purposes only
+    `Risk combination` = case_when(
+      RC1_P50 > 3.4 & RC2_P50 > 3.4 ~ "1-1 Scarcity High, Flooding High",
+      RC1_P50 > 3.4 & RC2_P50 > 2.6 & RC2_P50 <= 3.4 ~ "1-2 Scarcity High, Flooding Medium",
+      RC1_P50 > 3.4 & RC2_P50 <= 2.6 ~ "1-3 Scarcity High, Flooding Low",
+      RC1_P50 > 2.6 & RC1_P50 <= 3.4 & RC2_P50 > 3.4 ~ "2-1 Scarcity Medium, Flooding High",
+      RC1_P50 > 2.6 & RC1_P50 <= 3.4 & RC2_P50 > 2.6 & RC2_P50 <= 3.4 ~ "2-2 Scarcity Medium, Flooding Medium",
+      RC1_P50 > 2.6 & RC1_P50 <= 3.4 & RC2_P50 <= 2.6 ~ "2-3 Scarcity Medium, Flooding Low",
+      RC1_P50 <= 2.6 & RC2_P50 > 3.4 ~ "3-1 Scarcity Low, Flooding High",
+      RC1_P50 <= 2.6 & RC2_P50 > 2.6 & RC2_P50 <= 3.4 ~ "3-2 Scarcity Low, Flooding Medium",
+      RC1_P50 <= 2.6 & RC2_P50 <= 2.6 ~ "3-3 Scarcity Low, Flooding Low"
+    ) 
+  ) %>%
+  select(Status:Basin, `Flooding risk in 2050` = RC2_P50, `Scarcity risk in 2050` = RC1_P50, `Risk combination`)
+
+temp_all_dams %>%
+  group_by(`Risk combination`) %>%
+  summarise(
+    n=n(),
+    perc=round(n()/6188*100)
+  )
+
+
 #### Management bins (Analyses 1 to 4) ----
 temp <- current_dams %>%
   mutate(
