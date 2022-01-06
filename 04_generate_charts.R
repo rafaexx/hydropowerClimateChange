@@ -4,8 +4,8 @@ library(networkD3)
 
 
 #### Load data ----
-current_dams <- readRDS("outputs/rds/current_dams_scenarios.rds") %>% st_drop_geometry()
-future_dams <- readRDS("outputs/rds/future_dams_scenarios.rds") %>% st_drop_geometry()
+existing_dams <- readRDS("outputs/rds/existing_dams_scenarios.rds") %>% st_drop_geometry()
+projected_dams <- readRDS("outputs/rds/projected_dams_scenarios.rds") %>% st_drop_geometry()
 summaryCountry_grand <- readRDS("outputs/rds/summaryCountry_grand.rds")
 summaryCountry_fhred <- readRDS("outputs/rds/summaryCountry_fhred.rds")
 
@@ -16,10 +16,10 @@ summaryCountry_fhred <- readRDS("outputs/rds/summaryCountry_fhred.rds")
 # Color = Current risk
 # Width = Sum of dam capacity 
 
-makeBoxplot1to4 <- function(data, summary, riskChange, n, RCx_P5rc, RCx, AxisLabel, title, fileName){
+makeBoxplot1to4 <- function(data, summary, riskChange, n, RCx_P50rc, RCx, AxisLabel, title, fileName){
   
   riskChange <- enquo(riskChange)
-  RCx_P5rc <- enquo(RCx_P5rc)
+  RCx_P50rc <- enquo(RCx_P50rc)
   RCx <- enquo(RCx)
   
   temp <- summary %>%
@@ -34,8 +34,8 @@ makeBoxplot1to4 <- function(data, summary, riskChange, n, RCx_P5rc, RCx, AxisLab
     group_by(CountryCount) %>% 
     mutate(`Median risk (2020)` = median(!!RCx)) 
   
-  b <- ggplot(mydata, aes(x = forcats::fct_reorder(CountryCount, !!RCx_P5rc, .fun = mean, .desc = TRUE),
-                          y = !!RCx_P5rc)) +
+  b <- ggplot(mydata, aes(x = forcats::fct_reorder(CountryCount, !!RCx_P50rc, .fun = mean, .desc = TRUE),
+                          y = !!RCx_P50rc)) +
     
     geom_boxplot(aes(fill = `Median risk (2020)`, weight = Weight), varwidth = TRUE, outlier.size=0.5) +
     
@@ -56,10 +56,10 @@ makeBoxplot1to4 <- function(data, summary, riskChange, n, RCx_P5rc, RCx, AxisLab
   #plotly::ggplotly(b)
 }
 
-makeBoxplot1to4(current_dams, summaryCountry_grand, ScarcityChange_P50, 25, RC1_P5rc, RC1, "Change in scarcity risk by 2050", "Existing dams  |  Scarcity risk per country", "Boxplot1_GRanD_ChangeScarcityP50")
-makeBoxplot1to4(current_dams, summaryCountry_grand, FloodChange_P50, 25, RC2_P5rc, RC2, "Change in flood risk by 2050", "Existing dams  |  Flood risk per country", "Boxplot2_GRanD_ChangeFloodingP50")
-makeBoxplot1to4(future_dams, summaryCountry_fhred, ScarcityChange_P50, 25, RC1_P5rc, RC1, "Change in scarcity risk by 2050", "Projected dams  |  Scarcity risk per country", "Boxplot3_FHReD_ChangeScarcityP50")
-makeBoxplot1to4(future_dams, summaryCountry_fhred, FloodChange_P50, 25, RC2_P5rc, RC2, "Change in flood risk by 2050", "Projected dams  |  Flood risk per country", "Boxplot4_FHReD_ChangeFloodingP50")
+makeBoxplot1to4(existing_dams, summaryCountry_grand, ScarcityChange_P50, 25, RC1_P50rc, RC1, "Change in scarcity risk by 2050", "Existing dams  |  Scarcity risk per country", "Boxplot1_GRanD_ChangeScarcityP50")
+makeBoxplot1to4(existing_dams, summaryCountry_grand, FloodChange_P50, 25, RC2_P50rc, RC2, "Change in flood risk by 2050", "Existing dams  |  Flood risk per country", "Boxplot2_GRanD_ChangeFloodingP50")
+makeBoxplot1to4(projected_dams, summaryCountry_fhred, ScarcityChange_P50, 25, RC1_P50rc, RC1, "Change in scarcity risk by 2050", "Projected dams  |  Scarcity risk per country", "Boxplot3_FHReD_ChangeScarcityP50")
+makeBoxplot1to4(projected_dams, summaryCountry_fhred, FloodChange_P50, 25, RC2_P50rc, RC2, "Change in flood risk by 2050", "Projected dams  |  Flood risk per country", "Boxplot4_FHReD_ChangeFloodingP50")
 
 
 #### Bar charts by risk class (Analyses 1 to 4) ----
@@ -120,10 +120,10 @@ makeBarchart1to4 <- function(data, RC, RC_O, RC_C, RC_P, fileName){
          width = 12, height = 6, dpi = 300, units = "cm", device='jpeg')
 }
 
-makeBarchart1to4(current_dams, RC1, RC1_O50, RC1_C50, RC1_P50, "Barchart1_GRanD_Scenarios_Scarcity")
-makeBarchart1to4(current_dams, RC2, RC2_O50, RC2_C50, RC2_P50, "Barchart2_GRanD_Scenarios_Flooding")
-makeBarchart1to4(future_dams, RC1, RC1_O50, RC1_C50, RC1_P50, "Barchart3_FHReD_Scenarios_Scarcity")
-makeBarchart1to4(future_dams, RC2, RC2_O50, RC2_C50, RC2_P50, "Barchart4_FHReD_Scenarios_Flooding")
+makeBarchart1to4(existing_dams, RC1, RC1_O50, RC1_C50, RC1_P50, "Barchart1_GRanD_Scenarios_Scarcity")
+makeBarchart1to4(existing_dams, RC2, RC2_O50, RC2_C50, RC2_P50, "Barchart2_GRanD_Scenarios_Flooding")
+makeBarchart1to4(projected_dams, RC1, RC1_O50, RC1_C50, RC1_P50, "Barchart3_FHReD_Scenarios_Scarcity")
+makeBarchart1to4(projected_dams, RC2, RC2_O50, RC2_C50, RC2_P50, "Barchart4_FHReD_Scenarios_Flooding")
 
 
 #### Sankey diagrams by risk class (Analyses 1 to 4) ----
@@ -180,14 +180,14 @@ makeSankey <- function(data, RCx, RCx_Xxx){
                 fontFamily = "Arial Nova", fontSize = 13)
 }
 
-makeSankey(current_dams, RC1, RC1_P50) 
-makeSankey(current_dams, RC2, RC2_P50)
-makeSankey(future_dams, RC1, RC1_P50)
-makeSankey(future_dams, RC2, RC2_P50)
+makeSankey(existing_dams, RC1, RC1_P50) 
+makeSankey(existing_dams, RC2, RC2_P50)
+makeSankey(projected_dams, RC1, RC1_P50)
+makeSankey(projected_dams, RC2, RC2_P50)
 
 
-#### Bar charts by risk class (Analysis 5) ----
-b5a <- current_dams %>%
+#### Bar charts by risk class (Analysis 6) ----
+b6a <- existing_dams %>%
   mutate(
     RC10 = case_when(
       RC10 <= 1.8 ~ 1.0,
@@ -205,11 +205,11 @@ b5a <- current_dams %>%
             position = position_dodge(0.9), size=3.5) +
   theme_classic() +
   labs(x= "Biodiversity risk in 2020", y= "Number of existing dams")
-ggsave("outputs/barcharts/Barchart5a_GRanD_BiodiversityImportance2020.jpeg", b5a,
+ggsave("outputs/barcharts/Barchart6a_GRanD_Biodiversity2020.jpeg", b5a,
        width = 10, height = 6, dpi = 300, units = "cm", device='jpeg')
 
 
-b5b <- future_dams %>%
+b6b <- projected_dams %>%
   mutate(
     RC10 = case_when(
       RC10 <= 1.8 ~ 1.0,
@@ -227,5 +227,5 @@ b5b <- future_dams %>%
             position = position_dodge(0.9), size=3.5) +
   theme_classic() +
   labs(x= "Biodiversity risk in 2020", y= "Number of projected dams")
-ggsave("outputs/barcharts/Barchart5b_FHReD_BiodiversityImportance2020.jpeg", b5b,
+ggsave("outputs/barcharts/Barchart6b_FHReD_Biodiversity2020.jpeg", b5b,
        width = 10, height = 6, dpi = 300, units = "cm", device='jpeg')
